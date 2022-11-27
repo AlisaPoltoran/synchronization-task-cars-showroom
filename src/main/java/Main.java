@@ -3,38 +3,40 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
+        final int MANUFACTURING_TIME = 3000;
+        final int CUSTOMERS_PATIENCE = 2900;
 
         List<String> cars = new ArrayList<>();
 
         new Thread(() -> {
-            synchronized (cars) {
-                for (int i = 0; i < 10; i++) {
-                    cars.add("Новый автомобиль  " + (i + 1));
+            for (int i = 0; i < 10; i++) {
+                synchronized (cars) {
+                    String car = "Новый автомобиль " + (i + 1);
+                    cars.add(car);
+                    System.out.println("Производитель Toyota выпустил " + car);
                     cars.notifyAll();
-                    System.out.println("Производитель Toyota выпустил " + cars.get(i));
+                }
                     try {
-                        Thread.sleep(3000);
+                        Thread.sleep(MANUFACTURING_TIME);
                     } catch (InterruptedException e) {
                         return;
                     }
                 }
-            }
         }).start();
 
         new Thread(() -> {
             for (int i = 0; i < 5; i++) {
                 synchronized (cars) {
                     while (cars.isEmpty()) {
-                        System.out.println("Машин нет");
+                        System.out.println("Машин нет (из 1ого потока)");
                         try {
-                            cars.wait(100);
+                            cars.wait(CUSTOMERS_PATIENCE);
                             System.out.println("Недовольный покупатель ушел домой без машины");
-                            Thread.sleep(300);
                         } catch (InterruptedException e) {
                             return;
                         }
                     }
-                    System.out.println(cars.remove(0) + "забрал довольный покупатель");
+                    System.out.println(cars.remove(0) + " забрал довольный покупатель из 1ого потока");
                 }
             }
         }).start();
@@ -43,13 +45,14 @@ public class Main {
             for (int i = 0; i < 5; i++) {
                 synchronized (cars) {
                     while (cars.isEmpty()) {
+                        System.out.println("Машин нет (из 2ого потока)");
                         try {
                             cars.wait();
                         } catch (InterruptedException e) {
                             return;
                         }
                     }
-                    System.out.println("Обслужили покупателя " + cars.remove(0));
+                    System.out.println(cars.remove(0) + " забрал довольный покупатель из 2ого потока");
                 }
             }
         }).start();
